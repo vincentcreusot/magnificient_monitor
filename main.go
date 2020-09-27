@@ -45,9 +45,10 @@ func main() {
 // getStatus writes the status to the response in json format
 func getStatus(w http.ResponseWriter, r *http.Request) {
 	response := StatusResponse{
-		ServiceFailures: serviceFailures,
-		ServiceOks:      serviceOks,
-		TotalCount:,
+		ServiceFailures:     serviceFailures,
+		ServiceOks:          serviceOks,
+		TotalCount:          totalCount,
+		ServiceUnresponsive: serviceUnresponsive,
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -81,13 +82,13 @@ func NewMagnificentClient(url string) *MagnificentClient {
 func (m *MagnificentClient) callMagnificient() (string, error) {
 	req, err := http.NewRequest("GET", m.baseURL, nil)
 	if err != nil {
-		log.Println("Error creating the request %s", err)
+		log.Println("Error creating the request ", err)
 		return "", err
 	}
 	resp, err := m.client.Do(req)
 
 	if err != nil {
-		log.Println("Error sending the request. %s", err)
+		log.Println("Error sending the request. ", err)
 		serviceUnresponsive++
 		return "Service unresponsive", err
 	}
