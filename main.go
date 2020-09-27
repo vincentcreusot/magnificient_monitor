@@ -71,7 +71,7 @@ func getStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// callIt calls magnificent and writes the return to the reponse
+// callIt calls magnificent and writes the return to the response
 func callIt(w http.ResponseWriter, r *http.Request) {
 	status, err := magnificent.callMagnificient()
 	if err != nil {
