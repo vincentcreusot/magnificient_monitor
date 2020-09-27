@@ -5,11 +5,14 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 )
 
 const (
 	serviceUri = "https://api.us-west-1.saucelabs.com/v1/magnificent/"
+	defaultInterval = 10
 )
 
 var (
@@ -41,7 +44,12 @@ func main() {
 	r.HandleFunc("/", getStatus).Methods(http.MethodGet)
 	r.HandleFunc("/callit", callIt).Methods(http.MethodGet)
 	r.HandleFunc("/muststop", mustStop).Methods(http.MethodGet)
-	go runsMagnificent(magnificent)
+	interval := defaultInterval
+	if len(os.Args[1:]) > 0 {
+		interval, _ = strconv.Atoi(os.Args[1])
+	}
+	log.Println("Starting monitoring magnificent every", interval, "seconds")
+	go runsMagnificent(magnificent, interval)
 	log.Fatal(http.ListenAndServe(":8080", r))
 
 }
@@ -115,9 +123,9 @@ func (m *MagnificentClient) callMagnificient() (string, error) {
 	return "Magnificent return not understood", nil
 }
 
-func runsMagnificent(client *MagnificentClient) {
+func runsMagnificent(client *MagnificentClient, interval int) {
 	for !client.mustStop {
 		client.callMagnificient()
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }
