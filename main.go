@@ -12,9 +12,11 @@ const (
 )
 
 var (
-	serviceFailures = int64(0)
-	serviceOks      = int64(0)
-	count           = int64(0)
+	serviceFailures     = int64(0)
+	serviceOks          = int64(0)
+	totalCount          = int64(0)
+	serviceUnresponsive = int64(0)
+
 	magnificent = NewMagnificentClient(serviceUri)
 )
 
@@ -26,9 +28,10 @@ type MagnificentClient struct {
 
 // StatusResponse the response struct to export in json
 type StatusResponse struct {
-	ServiceFailures int64 `json:"service_failures"`
-	ServiceOks      int64 `json:"service_oks"`
-	TotalCount      int64 `json:"total_count"`
+	ServiceFailures     int64 `json:"service_failures"`
+	ServiceOks          int64 `json:"service_oks"`
+	TotalCount          int64 `json:"total_count"`
+	ServiceUnresponsive int64 `json:"service_unresponsive"`
 }
 
 func main() {
@@ -44,7 +47,7 @@ func getStatus(w http.ResponseWriter, r *http.Request) {
 	response := StatusResponse{
 		ServiceFailures: serviceFailures,
 		ServiceOks:      serviceOks,
-		TotalCount:      count,
+		TotalCount:,
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -53,6 +56,7 @@ func getStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// callIt calls magnificent and writes the return to the reponse
 func callIt(w http.ResponseWriter, r *http.Request) {
 	status, err := magnificent.callMagnificient()
 	if err != nil {
@@ -60,11 +64,12 @@ func callIt(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Error in calling service"))
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(status))
 }
 
+// NewMagnificentClient creates a new instance of the mag client
 func NewMagnificentClient(url string) *MagnificentClient {
 	return &MagnificentClient{
 		baseURL: url,
@@ -72,6 +77,7 @@ func NewMagnificentClient(url string) *MagnificentClient {
 	}
 }
 
+// callMagnificient calls the service and updates the counters
 func (m *MagnificentClient) callMagnificient() (string, error) {
 	req, err := http.NewRequest("GET", m.baseURL, nil)
 	if err != nil {
@@ -82,9 +88,9 @@ func (m *MagnificentClient) callMagnificient() (string, error) {
 
 	if err != nil {
 		log.Println("Error sending the request. %s", err)
-		return "", err
+		serviceUnresponsive++
+		return "Service unresponsive", err
 	}
-	count++
 
 	if resp.StatusCode == 200 {
 		serviceOks++
