@@ -12,3 +12,4 @@ go run main.go
 The program exposes 2 get methods :
 - / which returns a json version of the status of th magnificent service
 - /callit which calls the service and updates the statuses
+- /muststop stops the call of the magnificent service in background

@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"time"
 )
 
 const (
@@ -22,8 +23,9 @@ var (
 
 // MagnificentClient the client struct to put the methods on
 type MagnificentClient struct {
-	baseURL string
-	client  *http.Client
+	baseURL  string
+	client   *http.Client
+	mustStop bool
 }
 
 // StatusResponse the response struct to export in json
@@ -38,6 +40,8 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", getStatus).Methods(http.MethodGet)
 	r.HandleFunc("/callit", callIt).Methods(http.MethodGet)
+	r.HandleFunc("/muststop", mustStop).Methods(http.MethodGet)
+	go runsMagnificent(magnificent)
 	log.Fatal(http.ListenAndServe(":8080", r))
 
 }
@@ -70,11 +74,18 @@ func callIt(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(status))
 }
 
+func mustStop(w http.ResponseWriter, r *http.Request) {
+	magnificent.mustStop = true
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Stop boolean set!"))
+}
+
 // NewMagnificentClient creates a new instance of the mag client
 func NewMagnificentClient(url string) *MagnificentClient {
 	return &MagnificentClient{
-		baseURL: url,
-		client:  http.DefaultClient,
+		baseURL:  url,
+		client:   http.DefaultClient,
+		mustStop: false,
 	}
 }
 
@@ -86,7 +97,7 @@ func (m *MagnificentClient) callMagnificient() (string, error) {
 		return "", err
 	}
 	resp, err := m.client.Do(req)
-
+	totalCount++
 	if err != nil {
 		log.Println("Error sending the request. ", err)
 		serviceUnresponsive++
@@ -102,4 +113,11 @@ func (m *MagnificentClient) callMagnificient() (string, error) {
 		return "ERROR", nil
 	}
 	return "Magnificent return not understood", nil
+}
+
+func runsMagnificent(client *MagnificentClient) {
+	for !client.mustStop {
+		client.callMagnificient()
+		time.Sleep(2 * time.Second)
+	}
 }
