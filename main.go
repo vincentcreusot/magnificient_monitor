@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	serviceUri = "https://api.us-west-1.saucelabs.com/v1/magnificent/"
+	serviceUri      = "https://api.us-west-1.saucelabs.com/v1/magnificent/"
 	defaultInterval = 10
 )
 
@@ -33,10 +33,11 @@ type MagnificentClient struct {
 
 // StatusResponse the response struct to export in json
 type StatusResponse struct {
-	ServiceFailures     int64 `json:"service_failures"`
-	ServiceOks          int64 `json:"service_oks"`
-	TotalCount          int64 `json:"total_count"`
-	ServiceUnresponsive int64 `json:"service_unresponsive"`
+	ServiceFailures     int64   `json:"service_failures"`
+	ServiceOks          int64   `json:"service_oks"`
+	TotalCount          int64   `json:"total_count"`
+	ServiceUnresponsive int64   `json:"service_unresponsive"`
+	Availability        float64 `json:"availability"`
 }
 
 func main() {
@@ -61,6 +62,7 @@ func getStatus(w http.ResponseWriter, r *http.Request) {
 		ServiceOks:          serviceOks,
 		TotalCount:          totalCount,
 		ServiceUnresponsive: serviceUnresponsive,
+		Availability:        float64(serviceOks) / float64(totalCount),
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -82,6 +84,7 @@ func callIt(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(status))
 }
 
+// mustStop sets the mustStop boolean to true, so that the monitoring stops
 func mustStop(w http.ResponseWriter, r *http.Request) {
 	magnificent.mustStop = true
 	w.WriteHeader(http.StatusOK)
@@ -123,6 +126,7 @@ func (m *MagnificentClient) callMagnificient() (string, error) {
 	return "Magnificent return not understood", nil
 }
 
+// runsMagnificent runs the call to magnificent as long as the stop boolean is false
 func runsMagnificent(client *MagnificentClient, interval int) {
 	for !client.mustStop {
 		client.callMagnificient()
